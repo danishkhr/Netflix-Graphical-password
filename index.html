@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZamFlix - Pattern Authentication</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Login Screen */
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="%23141414"/><circle cx="200" cy="200" r="50" fill="%23e50914" opacity="0.1"/><circle cx="800" cy="300" r="80" fill="%23fff" opacity="0.05"/><circle cx="1000" cy="600" r="60" fill="%23e50914" opacity="0.1"/></svg>');
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .login-box {
+            background: rgba(0,0,0,0.9);
+            border-radius: 10px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        .logo {
+            color: #e50914;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #333;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .auth-tab.active {
+            color: #e50914;
+            border-bottom: 2px solid #e50914;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 1rem;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #e50914;
+        }
+
+        /* Pattern Grid */
+        .pattern-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2rem 0;
+        }
+
+        .pattern-grid {
+            width: 300px;
+            height: 300px;
+            position: relative;
+            background: #222;
+            border-radius: 10px;
+            padding: 20px;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .pattern-dot {
+            width: 20px;
+            height: 20px;
+            background: #555;
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid transparent;
+        }
+
+        .pattern-dot.active {
+            background: #e50914;
+            border-color: #fff;
+            transform: scale(1.2);
+        }
+
+        .pattern-dot.connected {
+            background: #e50914;
+            border-color: #fff;
+        }
+
+        .pattern-line {
+            position: absolute;
+            background: #e50914;
+            height: 3px;
+            transform-origin: left center;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .pattern-info {
+            margin-top: 1rem;
+            text-align: center;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 1rem;
+            background: #e50914;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 1rem;
+        }
+
+        .auth-button:hover {
+            background: #f40612;
+        }
+
+        .auth-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e50914;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Main App */
+        .app-container {
+            display: none;
+        }
+
+        .app-container.active {
+            display: block;
+        }
+
+        .navbar {
+            background: rgba(0,0,0,0.9);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #fff;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .profile-selector {
+            background: #333;
+            border: none;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            background: #e50914;
+            border: none;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .main-content {
+            margin-top: 80px;
+            padding: 2rem;
+        }
+
+        .hero-section {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), 
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect width="1200" height="600" fill="%23333"/><text x="600" y="300" text-anchor="middle" fill="%23666" font-size="48" font-family="Arial">FEATURED CONTENT</text></svg>');
+            height: 500px;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            margin-bottom: 3rem;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .hero-content {
+            max-width: 600px;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #ccc;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .play-btn, .info-btn {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .play-btn {
+            background: #fff;
+            color: #000;
+        }
+
+        .play-btn:hover {
+            background: #ccc;
+        }
+
+        .info-btn {
+            background: rgba(109, 109, 110, 0.7);
+            color: #fff;
+        }
+
+        .info-btn:hover {
+            background: rgba(109, 109, 110, 0.4);
+        }
+
+        .content-section {
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .content-row {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+
+        .content-item {
+            min-width: 250px;
+            height: 150px;
+            background: #333;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-item:hover {
+            transform: scale(1.05);
+        }
+
+        .content-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .content-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 1rem;
+            color: #fff;
+        }
+
+        .content-title {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        /* Video Player Modal */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            padding: 2rem;
+        }
+
+        .video-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+        }
+
+        .video-player {
+            width: 100%;
+            height: auto;
+            background: #000;
+        }
+
+        .close-video {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            background: #e50914;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-box {
+                padding: 2rem;
+            }
+
+            .pattern-grid {
+                width: 250px;
+                height: 250px;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-box">
+            <div class="logo">ZamFlix</div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+                <button class="auth-tab" onclick="switchTab('register')">Sign Up</button>
+            </div>
+
+            <!-- Login Form -->
+            <div class="auth-form active" id="loginForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter username">
+                </div>
+                
+                <div class="pattern-container">
+                    <label>Draw your pattern or use password</label>
+                    <div class="pattern-grid" id="loginPatternGrid">
+                        <!-- Pattern dots will be generated by JS -->
+                    </div>
+                    <div class="pattern-info" id="loginPatternInfo">Draw your unlock pattern</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Or use password (backup)</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password (optional)">
+                </div>
+
+                <button class="auth-button" onclick="handleLogin()">Sign In</button>
+                <div class="error-message" id="loginError"></div>
+            </div>
+
+            <!-- Register Form -->
+            <div class="auth-form" id="registerForm">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="registerUsername" placeholder="Choose username">
+                </div>
+
+                <div class="form-group">
+                    <label>Password (backup authentication)</label>
+                    <input type="password" id="registerPassword" placeholder="Choose password">
+                </div>
+
+                <div class="pattern-container">
+                    <label>Create your unlock pattern (minimum 5 dots)</label>
+                    <div class="pattern-grid" id="registerPatternGrid">
+                        <!-- Pattern dots will be generated by JS -->
+                    </div>
+                    <div class="pattern-info" id="registerPatternInfo">Draw your unlock pattern</div>
+                </div>
+
+                <button class="auth-button" onclick="handleRegister()">Create Account</button>
+                <div class="error-message" id="registerError"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="mainApp">
+        <nav class="navbar">
+            <div class="nav-left">
+                <div class="logo">ZamFlix</div>
+                <div class="nav-links">
+                    <a href="#" class="nav-link active" onclick="showSection('home')">Home</a>
+                    <a href="#" class="nav-link" onclick="showSection('movies')">Movies</a>
+                    <a href="#" class="nav-link" onclick="showSection('series')">TV Shows</a>
+                    <a href="#" class="nav-link" onclick="showSection('mylist')">My List</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <select class="profile-selector" id="profileSelector" onchange="switchProfile()">
+                    <!-- Profiles will be populated by JS -->
+                </select>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </nav>
+
+        <div class="main-content">
+            <div class="hero-section">
+                <div class="hero-content">
+                    <h1 class="hero-title">Stranger Things</h1>
+                    <p class="hero-description">When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.</p>
+                    <div class="hero-buttons">
+                        <button class="play-btn" onclick="playVideo('stranger-things')">▶ Play</button>
+                        <button class="info-btn">ⓘ More Info</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <h2 class="section-title">Trending Now</h2>
+                <div class="content-row" id="trendingContent">
+                    <!-- Content items will be generated by JS -->
+                </div>
+            </div>
+
+            <div class="content-section">
+                <h2 class="section-title">Popular Movies</h2>
+                <div class="content-row" id="moviesContent">
+                    <!-- Content items will be generated by JS -->
+                </div>
+            </div>
+
+            <div class="content-section">
+                <h2 class="section-title">TV Shows</h2>
+                <div class="content-row" id="seriesContent">
+                    <!-- Content items will be generated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div class="video-modal" id="videoModal">
+        <div class="video-container">
+            <button class="close-video" onclick="closeVideo()">✕ Close</button>
+            <video class="video-player" id="videoPlayer" controls>
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentProfile = null;
+        let isDrawing = false;
+        let currentPattern = [];
+        let patternLines = [];
+
+        // Sample video content
+        const videoContent = {
+            'stranger-things': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            'the-crown': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+            'ozark': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+            'narcos': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+            'black-mirror': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+            'breaking-bad': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4'
+        };
+
+        // Content data
+        const contentData = {
+            trending: [
+                { id: 'stranger-things', title: 'Stranger Things', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 150"><rect width="250" height="150" fill="%23e50914"/><text x="125" y="80" text-anchor="middle" fill="white" font-size="16" font-family="Arial">Stranger Things</text></svg>' },
+                { id: 'the-crown', title: 'The Crown', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 150"><rect width="250" height="150" fill="%23333"/><text x="125" y="80" text-anchor="middle" fill="white" font-size="16" font-family="Arial">The Crown</text></svg>' },
+                { id: 'ozark', title: 'Ozark', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 150"><rect width="250" height="150" fill="%23555"/><text x="125" y="80" text-anchor="middle" fill="white" font-size="16" font-family="Arial">Ozark</text></svg>' },
+            ],
+            movies: [
+                { id: 'narcos', title: 'Narcos', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 150"><rect width="250" height="150" fill="%23444"/><text x="125" y="80" text-anchor="middle" fill="white" font-size="16" font-family="Arial">Narcos</text></svg>' },
+                { id: 'black-mirror', title: 'Black Mirror', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 150"><rect width="250" height="150" fill="%23222"/><text x="125" y="80" text-anchor="middle" fill="white" font-size="16" font-family="Arial">Black Mirror</text></svg>' },
+            ],
+            series: [
+                { id: 'breaking-bad', title: 'Breaking Bad', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 150"><rect width="250" height="150" fill="%23666"/><text x="125" y="80" text-anchor="middle" fill="white" font-size="16" font-family="Arial">Breaking Bad</text></svg>' },
+            ]
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePatternGrids();
+            loadContent();
+            checkExistingSession();
+        });
+
+        // Check for existing session
+        function checkExistingSession() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                loadUserProfiles();
+                showMainApp();
+            }
+        }
+
+        // Switch between login and register tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Form').classList.add('active');
+            
+            // Clear error messages
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('registerError').textContent = '';
+        }
+
+        // Initialize pattern grids
+        function initializePatternGrids() {
+            const grids = ['loginPatternGrid', 'registerPatternGrid'];
+            
+            grids.forEach(gridId => {
+                const grid = document.getElementById(gridId);
+                grid.innerHTML = '';
+                
+                // Create 3x3 grid of dots
+                for (let i = 0; i < 9; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'pattern-dot';
+                    dot.dataset.index = i;
+                    
+                    const row = Math.floor(i / 3);
+                    const col = i % 3;
+                    dot.style.left = (col * 90 + 35) + 'px';
+                    dot.style.top = (row * 90 + 35) + 'px';
+                    
+                    grid.appendChild(dot);
+                }
+                
+                setupPatternEvents(gridId);
+            });
+        }
+
+        // Setup pattern drawing events
+        function setupPatternEvents(gridId) {
+            const grid = document.getElementById(gridId);
+            const dots = grid.querySelectorAll('.pattern-dot');
+            let isMouseDown = false;
+            
+            // Mouse events
+            grid.addEventListener('mousedown', startPattern);
+            grid.addEventListener('mousemove', continuePattern);
+            grid.addEventListener('mouseup', endPattern);
+            grid.addEventListener('mouseleave', endPattern);
+            
+            // Touch events
+            grid.addEventListener('touchstart', startPattern);
+            grid.addEventListener('touchmove', continuePattern);
+            grid.addEventListener('touchend', endPattern);
+            
+            function startPattern(e) {
+                e.preventDefault();
+                isMouseDown = true;
+                currentPattern = [];
+                clearPatternLines(grid);
+                clearPatternDots(grid);
+                
+                const dot = getDotFromEvent(e, grid);
+                if (dot) {
+                    addDotToPattern(dot, grid);
+                }
+            }
+            
+            function continuePattern(e) {
+                if (!isMouseDown) return;
+                e.preventDefault();
+                
+                const dot = getDotFromEvent(e, grid);
+                if (dot && !dot.classList.contains('connected')) {
+                    addDotToPattern(dot, grid);
+                }
+            }
+            
+            function endPattern(e) {
+                if (!isMouseDown) return;
+                isMouseDown = false;
+                
+                const infoElement = document.getElementById(gridId.replace('Grid', 'Info'));
+                if (currentPattern.length >= 5) {
+                    infoElement.textContent = `Pattern recorded (${currentPattern.length} dots)`;
+                    infoElement.style.color = '#4CAF50';
+                } else {
+                    infoElement.textContent = `Pattern too short (minimum 5 dots)`;
+                    infoElement.style.color = '#e50914';
+                    setTimeout(() => {
+                        clearPatternLines(grid);
+                        clearPatternDots(grid);
+                        infoElement.textContent = 'Draw your unlock pattern';
+                        infoElement.style.color = '#ccc';
+                    }, 1500);
+                }
+            }
+        }
+
+        // Get dot from mouse/touch event
+        function getDotFromEvent(e, grid) {
+            const rect = grid.getBoundingClientRect();
+            let clientX, clientY;
+            
+            if (e.type.startsWith('touch')) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            
+            const dots = grid.querySelectorAll('.pattern-dot');
+            for (let dot of dots) {
+                const dotRect = dot.getBoundingClientRect();
+                const dotX = dotRect.left - rect.left + dotRect.width / 2;
+                const dotY = dotRect.top - rect.top + dotRect.height / 2;
+                
+                if (Math.abs(x - dotX) < 30 && Math.abs(y - dotY) < 30) {
+                    return dot;
+                }
+            }
+            return null;
+        }
+
+        // Add dot to pattern and draw line
+        function addDotToPattern(dot, grid) {
+            const index = parseInt(dot.dataset.index);
+            if (currentPattern.includes(index)) return;
+            
+            dot.classList.add('connected');
+            currentPattern.push(index);
+            
+            if (currentPattern.length > 1) {
+                drawLine(grid, currentPattern[currentPattern.length - 2], index);
+            }
+        }
+
+        // Draw line between dots
+        function drawLine(grid, fromIndex, toIndex) {
+            const dots = grid.querySelectorAll('.pattern-dot');
+            const fromDot = dots[fromIndex];
+            const toDot = dots[toIndex];
+            
+            const fromRect = fromDot.getBoundingClientRect();
+            const toRect = toDot.getBoundingClientRect();
+            const gridRect = grid.getBoundingClientRect();
+            
+            const fromX = fromRect.left - gridRect.left + fromRect.width / 2;
+            const fromY = fromRect.top - gridRect.top + fromRect.height / 2;
+            const toX = toRect.left - gridRect.left + toRect.width / 2;
+            const toY = toRect.top - gridRect.top + toRect.height / 2;
+            
+            const length = Math.sqrt(Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2));
+            const angle = Math.atan2(toY - fromY, toX - fromX) * 180 / Math.PI;
+            
+            const line = document.createElement('div');
+            line.className = 'pattern-line';
+            line.style.left = fromX + 'px';
+            line.style.top = fromY + 'px';
+            line.style.width = length + 'px';
+            line.style.transform = `rotate(${angle}deg)`;
+            
+            grid.appendChild(line);
+        }
+
+        // Clear pattern lines
+        function clearPatternLines(grid) {
+            const lines = grid.querySelectorAll('.pattern-line');
+            lines.forEach(line => line.remove());
+        }
+
+        // Clear pattern dots
+        function clearPatternDots(grid) {
+            const dots = grid.querySelectorAll('.pattern-dot');
+            dots.forEach(dot => {
+                dot.classList.remove('connected', 'active');
+            });
+        }
+
+        // Handle registration
+        function handleRegister() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const errorElement = document.getElementById('registerError');
+            
+            if (!username) {
+                errorElement.textContent = 'Please enter a username';
+                return;
+            }
+            
+            if (!password) {
+                errorElement.textContent = 'Please enter a password';
+                return;
+            }
+            
+            if (currentPattern.length < 5) {
+                errorElement.textContent = 'Please draw a pattern with at least 5 dots';
+                return;
+            }
+            
+            // Check if user already exists
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            if (users[username]) {
+                errorElement.textContent = 'Username already exists';
+                return;
+            }
+            
+            // Save user
+            users[username] = {
+                username: username,
+                password: password,
+                pattern: currentPattern.slice(),
+                profiles: [
+                    { name: username, avatar: '👤' },
+                    { name: 'Profile 2', avatar: '👥' }
+                ],
+                created: new Date().toISOString()
+            };
+            
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            // Auto-login after registration
+            currentUser = users[username];
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            loadUserProfiles();
+            showMainApp();
+        }
+
+        // Handle login
+        function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorElement = document.getElementById('loginError');
+            
+            if (!username) {
+                errorElement.textContent = 'Please enter a username';
+                return;
+            }
+            
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+            const user = users[username];
+            
+            if (!user) {
+                errorElement.textContent = 'User not found';
+                return;
+            }
+            
+            // Check pattern or password
+            let authSuccess = false;
+            
+            if (currentPattern.length >= 5) {
+                // Check if pattern matches
+                if (JSON.stringify(currentPattern) === JSON.stringify(user.pattern)) {
+                    authSuccess = true;
+                }
+            }
+            
+            if (!authSuccess && password) {
+                // Check password as backup
+                if (password === user.password) {
+                    authSuccess = true;
+                }
+            }
+            
+            if (!authSuccess) {
+                errorElement.textContent = 'Invalid pattern or password';
+                setTimeout(() => {
+                    clearPatternLines(document.getElementById('loginPatternGrid'));
+                    clearPatternDots(document.getElementById('loginPatternGrid'));
+                    document.getElementById('loginPatternInfo').textContent = 'Draw your unlock pattern';
+                    document.getElementById('loginPatternInfo').style.color = '#ccc';
+                }, 1500);
+                return;
+            }
+            
+            // Login successful
+            currentUser = user;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            loadUserProfiles();
+            showMainApp();
+        }
+
+        // Load user profiles
+        function loadUserProfiles() {
+            const profileSelector = document.getElementById('profileSelector');
+            profileSelector.innerHTML = '';
+            
+            currentUser.profiles.forEach((profile, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${profile.avatar} ${profile.name}`;
+                profileSelector.appendChild(option);
+            });
+            
+            currentProfile = currentUser.profiles[0];
+        }
+
+        // Switch profile
+        function switchProfile() {
+            const selectedIndex = document.getElementById('profileSelector').value;
+            currentProfile = currentUser.profiles[selectedIndex];
+        }
+
+        // Show main app
+        function showMainApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').classList.add('active');
+        }
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            currentProfile = null;
+            localStorage.removeItem('currentUser');
+            
+            document.getElementById('mainApp').classList.remove('active');
+            document.getElementById('loginScreen').style.display = 'flex';
+            
+            // Clear forms
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('registerUsername').value = '';
+            document.getElementById('registerPassword').value = '';
+            
+            // Clear patterns
+            clearPatternLines(document.getElementById('loginPatternGrid'));
+            clearPatternDots(document.getElementById('loginPatternGrid'));
+            clearPatternLines(document.getElementById('registerPatternGrid'));
+            clearPatternDots(document.getElementById('registerPatternGrid'));
+            
+            // Reset pattern info
+            document.getElementById('loginPatternInfo').textContent = 'Draw your unlock pattern';
+            document.getElementById('loginPatternInfo').style.color = '#ccc';
+            document.getElementById('registerPatternInfo').textContent = 'Draw your unlock pattern';
+            document.getElementById('registerPatternInfo').style.color = '#ccc';
+            
+            currentPattern = [];
+        }
+
+        // Show section
+        function showSection(section) {
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Here you could implement different content for different sections
+            console.log('Showing section:', section);
+        }
+
+        // Load content
+        function loadContent() {
+            loadContentSection('trendingContent', contentData.trending);
+            loadContentSection('moviesContent', contentData.movies);
+            loadContentSection('seriesContent', contentData.series);
+        }
+
+        // Load content section
+        function loadContentSection(containerId, items) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            items.forEach(item => {
+                const contentItem = document.createElement('div');
+                contentItem.className = 'content-item';
+                contentItem.onclick = () => playVideo(item.id);
+                
+                contentItem.innerHTML = `
+                    <img src="${item.image}" alt="${item.title}">
+                    <div class="content-overlay">
+                        <div class="content-title">${item.title}</div>
+                    </div>
+                `;
+                
+                container.appendChild(contentItem);
+            });
+        }
+
+        // Play video
+        function playVideo(videoId) {
+            const videoModal = document.getElementById('videoModal');
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            if (videoContent[videoId]) {
+                videoPlayer.src = videoContent[videoId];
+                videoModal.classList.add('active');
+                videoPlayer.play();
+            } else {
+                alert('Video not available');
+            }
+        }
+
+        // Close video
+        function closeVideo() {
+            const videoModal = document.getElementById('videoModal');
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            videoPlayer.pause();
+            videoPlayer.src = '';
+            videoModal.classList.remove('active');
+        }
+
+        // Close video when clicking outside
+        document.getElementById('videoModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeVideo();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeVideo();
+            }
+        });
+    </script>
+</body>
+</html>
